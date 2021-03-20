@@ -9,28 +9,83 @@ import java.io.DataOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import clientSocket.client.MessageEnvoyer;
+
 public class serveur {
+	private static List<MessageEnvoyer> list = new ArrayList<MessageEnvoyer>();
+	public static boolean quitter = false;
 
 	public static class MessageRecepteur extends Thread {
+		String nom;
 		private Socket client;
 		String msg;
+		DataInputStream ins;
+		DataOutputStream outs;
 
-		public MessageRecepteur(Socket client) {
+		public MessageRecepteur(Socket client) throws IOException {
 			this.client = client;
+			this.ins = new DataInputStream(client.getInputStream());
+			this.outs = new DataOutputStream(client.getOutputStream());
+		}
+
+		public void ReplyToAll(String nom, String msg) {
+			for (MessageEnvoyer client : list) {
+				try {
+					client.outs.writeUTF(this.nom + " a dit: " + this.msg);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		public void salut(String nom) {
+			for (MessageEnvoyer client : list) {
+				try {
+					client.outs.writeUTF(nom + " a rejoint la conversation !");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		public void exit(String nom) {
+			for (MessageEnvoyer client : list) {
+				try {
+					client.outs.writeUTF("L'utilisateur " + nom + " a quitté la conversation !");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
 		}
 
 		public void run() {
 			try {
-				DataInputStream ins=new DataInputStream(client.getInputStream());
-				InputStream in = client.getInputStream();
-	//			byte []b = new byte[1024];
+				this.nom = ins.readUTF();
+				MessageEnvoyer client1 = new MessageEnvoyer(nom, client);
+				list.add(client1);
+				salut(this.nom);
+				outs.writeUTF("\n---------------------------");
+				// byte []b = new byte[1024];
 				while (true) {
-					msg = ins.readUTF();
-			//	ins.read(b);
-				System.out.println("client a dit: " + msg);
+					this.msg = ins.readUTF();
+					if (this.msg.equals("exit")) {
+						exit(this.nom);
+						list.remove(client1);
+						ins.close();
+						outs.close();
+						quitter = true;
+						break;
+					}
+					// ins.read(b);
+					ReplyToAll(this.nom, this.msg);
+					System.out.println(this.nom + " a dit: " + this.msg);
 				}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -51,6 +106,9 @@ public class serveur {
 				Socket client = conn.accept();
 				MessageRecepteur msgrecepteur = new MessageRecepteur(client);
 				msgrecepteur.start();
+				if (quitter == true) {
+					client.close();
+				}
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
