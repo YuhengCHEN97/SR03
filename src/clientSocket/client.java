@@ -23,6 +23,7 @@ public class client {
 		String msg;
 		public DataOutputStream outs;
 		public DataInputStream ins;
+		public boolean memeNom = false;
 		
 
 
@@ -32,11 +33,36 @@ public class client {
 			this.outs=new  DataOutputStream(client.getOutputStream());
 			this.ins=new DataInputStream(client.getInputStream());
 		}
+		
+		public String getNom () {
+			return nom;
+		}
+		
+		public void setMemeNom (boolean memeNom) {
+			this.memeNom = memeNom;
+		}
 
 		public void run() {
+			Scanner sc=new Scanner(System.in);
+			while (nom==null) {
+	        	System.out.println("Entrer votre nom:");
+	        	nom = sc.nextLine();
+			}
+			try {
+				outs.writeUTF(nom);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			} 
+			while (this.memeNom==true) {
+	        	nom = sc.nextLine();
+	        	try {
+					outs.writeUTF(nom);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
     		while (true) {
     			try {
-    			Scanner sc=new Scanner(System.in);
     			String msg = sc.nextLine();
     			if (msg.equals("exit")) {
     				outs.writeUTF(msg);
@@ -95,14 +121,14 @@ public class client {
 		try {
 			String nom = null;
 			Socket client = new Socket("localhost", 20000);
-            DataOutputStream outs=new  DataOutputStream(client.getOutputStream());
+            /*DataOutputStream outs=new  DataOutputStream(client.getOutputStream());
 			DataInputStream ins=new DataInputStream(client.getInputStream());
         	Scanner sc=new Scanner(System.in);
 			while (nom==null) {
 	        	System.out.println("Entrer votre nom:");
 	        	nom = sc.nextLine();
 			}
-			outs.writeUTF(nom);
+			outs.writeUTF(nom);*/
     		MessageEnvoyer Envoyeur = new MessageEnvoyer(nom,client);
     		Envoyeur.start();
     		MessageRecepteur Recepteur = new MessageRecepteur(nom,client);

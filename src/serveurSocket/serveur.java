@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 import clientSocket.client.MessageEnvoyer;
 
 public class serveur {
-	private static List<MessageEnvoyer> list = new ArrayList<MessageEnvoyer>();
+	public static List<MessageEnvoyer> list = new ArrayList<MessageEnvoyer>();
 	public static boolean quitter = false;
 
 	public static class MessageRecepteur extends Thread {
@@ -64,11 +64,28 @@ public class serveur {
 			}
 
 		}
+		
+		public boolean memeNom(MessageEnvoyer client, String nom) {
+			for (MessageEnvoyer aclient : list) {
+				if (aclient.getNom().equals(nom)) {
+					return true;
+				}
+			}
+			client.setMemeNom(false);
+			return false;
+		}
 
 		public void run() {
 			try {
 				this.nom = ins.readUTF();
 				MessageEnvoyer client1 = new MessageEnvoyer(nom, client);
+				boolean hasMemeNom = memeNom(client1,this.nom);
+				while (hasMemeNom==true) {
+					client1.outs.writeUTF("Votre nom a déjà été utiliser! Entrer votre nom:");
+					client1.setMemeNom(true);
+					this.nom = ins.readUTF();
+					hasMemeNom = memeNom(client1,this.nom);
+				}
 				list.add(client1);
 				salut(this.nom);
 				outs.writeUTF("\n---------------------------");
