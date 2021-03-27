@@ -1,114 +1,136 @@
 package clientSocket;
 
-import static java.lang.Math.floor;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * C'est le class client qui simule l'action de client. Chaque fois que cette
+ * classe est exécutée, un client est créé.
+ * 
+ * @author alexchen
+ * @version final
+ *
+ */
 public class client {
+
 	public static boolean quitter = false;
 
+	/*
+	 * C'est le thread qui est utilisé pour envoyer le message.
+	 */
 	public static class MessageEnvoyer extends Thread {
 		String nom;
 		private Socket client;
 		String msg;
 		public DataOutputStream outs;
 		public DataInputStream ins;
-		public boolean memeNom = false;
-		
 
+		/**
+		 * constructeur
+		 * 
+		 * @param client le client socket
+		 * @throws IOException
+		 */
 
-		public MessageEnvoyer(String nom,Socket client) throws IOException {
-			this.nom=nom;
+		public MessageEnvoyer(Socket client) throws IOException {
 			this.client = client;
-			this.outs=new  DataOutputStream(client.getOutputStream());
-			this.ins=new DataInputStream(client.getInputStream());
+			this.outs = new DataOutputStream(client.getOutputStream());
+			this.ins = new DataInputStream(client.getInputStream());
+		}
+
+		public void setNom(String nom) {
+			this.nom = nom;
+		}
+
+		public void setClient(Socket client) {
+			this.client = client;
+		}
+
+		public void setMsg(String msg) {
+			this.msg = msg;
+		}
+
+		public String getNom() {
+			return this.nom;
+		}
+
+		public Socket getClient() {
+			return this.client;
 		}
 		
-		public String getNom () {
-			return nom;
-		}
-		
-		public void setMemeNom (boolean memeNom) {
-			this.memeNom = memeNom;
+		public String getMsg() {
+			return this.msg;
 		}
 
 		public void run() {
-			Scanner sc=new Scanner(System.in);
-			while (nom==null) {
-	        	System.out.println("Entrer votre nom:");
-	        	nom = sc.nextLine();
-			}
+			Scanner sc = new Scanner(System.in);
+			System.out.println("Entrer votre nom:");
+			this.setNom(sc.nextLine());
 			try {
-				outs.writeUTF(nom);
+				outs.writeUTF(this.getNom());
 			} catch (IOException e1) {
 				e1.printStackTrace();
-			} 
-			while (this.memeNom==true) {
-	        	nom = sc.nextLine();
-	        	try {
-					outs.writeUTF(nom);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
 			}
-    		while (true) {
-    			try {
-    			String msg = sc.nextLine();
-    			if (msg.equals("exit")) {
-    				outs.writeUTF(msg);
-    				System.out.println("Vous avez quitté la conversation");
-    				ins.close();
-    				outs.close();
-    				quitter = true;
-    				break;
-    			}
+			while (true) {
+				try {
+					String msg = sc.nextLine();
+					/*
+					 * Voir si le msg à envoyer equal 'exit'.Si oui, arrêter le boucle et finir le
+					 * thread.
+					 */
+					if (msg.equals("exit")) {
+						outs.writeUTF(msg);
+						System.out.println("Vous avez quitté la conversation");
+						ins.close();
+						outs.close();
+						sc.close();
+						quitter = true;
+						break;
+					}
 					outs.writeUTF(msg);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-    			}
+			}
 
 		}
 	}
-	
+
+	/**
+	 * C'est le thread qui est utilisé pour recevoir le message.
+	 */
+
 	public static class MessageRecepteur extends Thread {
 		String nom;
 		private Socket client;
 		String msg;
-		public DataOutputStream outs;
 		public DataInputStream ins;
-		
-		public MessageRecepteur(String nom,Socket client) throws IOException {
-			this.nom=nom;
+
+		/*
+		 * constructeur
+		 */
+		public MessageRecepteur(Socket client) throws IOException {
 			this.client = client;
-			this.outs=new  DataOutputStream(client.getOutputStream());
-			this.ins=new DataInputStream(client.getInputStream());
+			this.ins = new DataInputStream(client.getInputStream());
 		}
-		
+
 		public void run() {
 			while (true) {
-    			String msgFromServeur;
-    			if (quitter == true) {
-    				break;
-    			}
 				try {
-					msgFromServeur = ins.readUTF();
-	    			System.out.println(msgFromServeur);
+					if (quitter == true) {
+						ins.close();
+						break;
+					}
+					System.out.println(ins.readUTF());
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-
 			}
 		}
 	}
@@ -117,29 +139,17 @@ public class client {
 	 * @param args the command line arguments
 	 */
 	public static void main(String[] args) {
-
 		try {
-			String nom = null;
 			Socket client = new Socket("localhost", 20000);
-            /*DataOutputStream outs=new  DataOutputStream(client.getOutputStream());
-			DataInputStream ins=new DataInputStream(client.getInputStream());
-        	Scanner sc=new Scanner(System.in);
-			while (nom==null) {
-	        	System.out.println("Entrer votre nom:");
-	        	nom = sc.nextLine();
+			MessageEnvoyer Envoyeur = new MessageEnvoyer(client);
+			Envoyeur.start();
+			MessageRecepteur Recepteur = new MessageRecepteur(client);
+			Recepteur.start();
+			if (quitter == true) {
+				client.close();
 			}
-			outs.writeUTF(nom);*/
-    		MessageEnvoyer Envoyeur = new MessageEnvoyer(nom,client);
-    		Envoyeur.start();
-    		MessageRecepteur Recepteur = new MessageRecepteur(nom,client);
-    		Recepteur.start();
-    		if (quitter ==true) {
-    			client.close();
-    		}
 		} catch (IOException ex) {
 			Logger.getLogger(client.class.getName()).log(Level.SEVERE, null, ex);
 		}
-
-
 	}
 }

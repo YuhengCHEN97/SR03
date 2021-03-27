@@ -1,25 +1,30 @@
 package serveurSocket;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.HashMap;
 
-import clientSocket.client.MessageEnvoyer;
-
+/**
+ * C'est le class serveur qui simule l'action de serveur. Il faut d'abord
+ * exécuter cette classe pour créer un serveur.
+ * 
+ * @author alexchen
+ * @version final
+ *
+ */
 public class serveur {
-	public static List<MessageEnvoyer> list = new ArrayList<MessageEnvoyer>();
-	public static boolean quitter = false;
+	/*
+	 * Créer une mapper pour stocker le client socket et le nom.
+	 */
+	public static HashMap<Socket, String> clientTable = new HashMap<Socket, String>();
+
+	/*
+	 * C'est le thread de serveur qui est utilisé pour recevoir le message.
+	 */
 
 	public static class MessageRecepteur extends Thread {
 		String nom;
@@ -28,84 +33,115 @@ public class serveur {
 		DataInputStream ins;
 		DataOutputStream outs;
 
+		/**
+		 * constructeur
+		 * 
+		 * @param client le client socket
+		 * @throws IOException
+		 */
+
 		public MessageRecepteur(Socket client) throws IOException {
 			this.client = client;
 			this.ins = new DataInputStream(client.getInputStream());
 			this.outs = new DataOutputStream(client.getOutputStream());
 		}
-
-		public void ReplyToAll(String nom, String msg) {
-			for (MessageEnvoyer client : list) {
-				try {
-					client.outs.writeUTF(this.nom + " a dit: " + this.msg);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
-		public void salut(String nom) {
-			for (MessageEnvoyer client : list) {
-				try {
-					client.outs.writeUTF(nom + " a rejoint la conversation !");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
-		public void exit(String nom) {
-			for (MessageEnvoyer client : list) {
-				try {
-					client.outs.writeUTF("L'utilisateur " + nom + " a quitté la conversation !");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-
-		}
 		
-		public boolean memeNom(MessageEnvoyer client, String nom) {
-			for (MessageEnvoyer aclient : list) {
-				if (aclient.getNom().equals(nom)) {
+		public void setNom(String nom) {
+			this.nom = nom;
+		}
+
+		public void setClient(Socket client) {
+			this.client = client;
+		}
+
+		public void setMsg(String msg) {
+			this.msg = msg;
+		}
+
+		public String getNom() {
+			return this.nom;
+		}
+
+		public Socket getClient() {
+			return this.client;
+		}
+
+		public String getMsg() {
+			return this.msg;
+		}
+
+		/*
+		 * ReplyToAll va diffuser les messages à tous les clients dans clientTable
+		 */
+
+		public void ReplyToAll(String nom, String msg) throws IOException {
+			for (Socket key : clientTable.keySet()) {
+				DataOutputStream out = new DataOutputStream(key.getOutputStream());
+				out.writeUTF(nom + " a dit: " + msg);
+			}
+		}
+
+		/*
+		 * Une fois le client est créer, cette fonction va diffueser un message de
+		 * rappel à tous les clients
+		 */
+
+		public void salut(String nom) throws IOException {
+			for (Socket key : clientTable.keySet()) {
+				DataOutputStream out = new DataOutputStream(key.getOutputStream());
+				out.writeUTF(nom + " a rejoint la conversation !");
+			}
+		}
+
+		/*
+		 * Une fois le message reçu est 'exit', cette fonction va diffueser un message
+		 * de rappel à tous les clients
+		 */
+
+		public void exit(String nom) throws IOException {
+			for (Socket key : clientTable.keySet()) {
+				DataOutputStream out = new DataOutputStream(key.getOutputStream());
+				out.writeUTF("L'utilisateur " + nom + " a quitté la conversation !");
+			}
+		}
+
+		/*
+		 * Traverser le client table pour garantir qu’un pseudonyme est unique
+		 */
+
+		public boolean memeNom(String nom) {
+			for (String clientNom : clientTable.values()) {
+				if (clientNom.equals(nom)) {
 					return true;
 				}
 			}
-			client.setMemeNom(false);
 			return false;
 		}
 
 		public void run() {
 			try {
-				this.nom = ins.readUTF();
-				MessageEnvoyer client1 = new MessageEnvoyer(nom, client);
-				boolean hasMemeNom = memeNom(client1,this.nom);
-				while (hasMemeNom==true) {
-					client1.outs.writeUTF("Votre nom a déjà été utiliser! Entrer votre nom:");
-					client1.setMemeNom(true);
-					this.nom = ins.readUTF();
-					hasMemeNom = memeNom(client1,this.nom);
+				this.setNom(ins.readUTF());
+				while (this.memeNom(getNom()) == true || this.getNom().length()==0) {
+					/*
+					 * Verifier si le nom est vide ou déjà utilisé.
+					 */
+					outs.writeUTF("Votre nom a déjà été utiliser ou il est vide! Entrer votre nom:");
+					this.setNom(ins.readUTF());
 				}
-				list.add(client1);
-				salut(this.nom);
+				clientTable.put(client, this.getNom());
+				this.salut(getNom());
 				outs.writeUTF("\n---------------------------");
-				// byte []b = new byte[1024];
 				while (true) {
-					this.msg = ins.readUTF();
-					if (this.msg.equals("exit")) {
-						exit(this.nom);
-						list.remove(client1);
-						ins.close();
-						outs.close();
-						quitter = true;
+					this.setMsg(ins.readUTF());
+					if (this.getMsg().equals("exit")) {
+						this.exit(this.getNom());
+						clientTable.remove(client);
 						break;
 					}
-					// ins.read(b);
-					ReplyToAll(this.nom, this.msg);
+					ReplyToAll(this.getNom(), this.getMsg());
 					System.out.println(this.nom + " a dit: " + this.msg);
 				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
@@ -123,12 +159,8 @@ public class serveur {
 				Socket client = conn.accept();
 				MessageRecepteur msgrecepteur = new MessageRecepteur(client);
 				msgrecepteur.start();
-				if (quitter == true) {
-					client.close();
-				}
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
