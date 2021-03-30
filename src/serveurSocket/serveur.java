@@ -12,20 +12,19 @@ import java.util.HashMap;
  * C'est le class serveur qui simule l'action de serveur. Il faut d'abord
  * exécuter cette classe pour créer un serveur.
  * 
- * @author alexchen
+ * @author alexchen et louisgreiner
  * @version final
  *
  */
 public class serveur {
 	/*
-	 * Créer une mapper pour stocker le client socket et le nom.
+	 * Hashmap utilisée pour stocker les sockets client et leurs noms.
 	 */
 	public static HashMap<Socket, String> clientTable = new HashMap<Socket, String>();
 
 	/*
-	 * C'est le thread de serveur qui est utilisé pour recevoir le message.
+	 * Thread utilisé pour recevoir les messages.
 	 */
-
 	public static class MessageRecepteur extends Thread {
 		String nom;
 		private Socket client;
@@ -36,7 +35,7 @@ public class serveur {
 		/**
 		 * constructeur
 		 * 
-		 * @param client le client socket
+		 * @param socket client
 		 * @throws IOException
 		 */
 
@@ -71,7 +70,7 @@ public class serveur {
 		}
 
 		/*
-		 * ReplyToAll va diffuser les messages à tous les clients dans clientTable
+		 * ReplyToAll va diffuser tous les messages à tous les clients dans clientTable
 		 */
 
 		public void ReplyToAll(String nom, String msg) throws IOException {
@@ -82,7 +81,7 @@ public class serveur {
 		}
 
 		/*
-		 * Une fois le client est créer, cette fonction va diffueser un message de
+		 * Chaque fois qu'un client est créé, cette fonction va diffuser un message de
 		 * rappel à tous les clients
 		 */
 
@@ -94,7 +93,7 @@ public class serveur {
 		}
 
 		/*
-		 * Une fois le message reçu est 'exit', cette fonction va diffueser un message
+		 * Chaque fois que le message reçu est 'exit', cette fonction va diffuser un message
 		 * de rappel à tous les clients
 		 */
 
@@ -106,7 +105,7 @@ public class serveur {
 		}
 
 		/*
-		 * Traverser le client table pour garantir qu’un pseudonyme est unique
+		 * Parcourt la table clientTable pour garantir qu'un pseudonyme est unique
 		 */
 
 		public boolean memeNom(String nom) {
@@ -123,9 +122,9 @@ public class serveur {
 				this.setNom(ins.readUTF());
 				while (this.memeNom(getNom()) == true || this.getNom().length()==0) {
 					/*
-					 * Verifier si le nom est vide ou déjà utilisé.
+					 * Verifie si le nom est disponible ou déjà utilisé.
 					 */
-					outs.writeUTF("Votre nom a déjà été utiliser ou il est vide! Entrer votre nom:");
+					outs.writeUTF("Votre nom est incorrect (déjà utilisé ou vide)! Entrez votre nom:");
 					this.setNom(ins.readUTF());
 				}
 				clientTable.put(client, this.getNom());
