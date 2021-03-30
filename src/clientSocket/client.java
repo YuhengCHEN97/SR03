@@ -9,10 +9,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * C'est le class client qui simule l'action de client. Chaque fois que cette
- * classe est exécutée, un client est créé.
+ * C'est la class client qui simule l'action du client. Chaque fois que cette
+ * classe est exécutée, une instance de client est créée.
  * 
- * @author alexchen
+ * @author alexchen et louisgreiner
  * @version final
  *
  */
@@ -21,7 +21,7 @@ public class client {
 	public static boolean quitter = false;
 
 	/*
-	 * C'est le thread qui est utilisé pour envoyer le message.
+	 * Thread utilisé pour envoyer le message.
 	 */
 	public static class MessageEnvoyer extends Thread {
 		String nom;
@@ -33,7 +33,7 @@ public class client {
 		/**
 		 * constructeur
 		 * 
-		 * @param client le client socket
+		 * @param socket client
 		 * @throws IOException
 		 */
 
@@ -69,7 +69,7 @@ public class client {
 
 		public void run() {
 			Scanner sc = new Scanner(System.in);
-			System.out.println("Entrer votre nom:");
+			System.out.println("Entrez votre nom:");
 			this.setNom(sc.nextLine());
 			try {
 				outs.writeUTF(this.getNom());
@@ -80,8 +80,7 @@ public class client {
 				try {
 					String msg = sc.nextLine();
 					/*
-					 * Voir si le msg à envoyer equal 'exit'.Si oui, arrêter le boucle et finir le
-					 * thread.
+					 * Si le message à envoyer est "exit", déconnecte le client, arrête la boucle et arrêter le thread.
 					 */
 					if (msg.equals("exit")) {
 						outs.writeUTF(msg);
@@ -94,7 +93,6 @@ public class client {
 					}
 					outs.writeUTF(msg);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -102,8 +100,8 @@ public class client {
 		}
 	}
 
-	/**
-	 * C'est le thread qui est utilisé pour recevoir le message.
+	/*
+	 * Thread utilisé pour recevoir le message.
 	 */
 
 	public static class MessageRecepteur extends Thread {
@@ -123,11 +121,11 @@ public class client {
 		public void run() {
 			while (true) {
 				try {
-					if (quitter == true) {
+					if (quitter == true) { // ferme le flux de données entrant si l'utilisateur se déconnecte
 						ins.close();
 						break;
 					}
-					System.out.println(ins.readUTF());
+					System.out.println(ins.readUTF()); // sinon affiche chaque message reçu
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
