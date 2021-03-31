@@ -100,7 +100,11 @@ public class client {
 		}
 	}
 
+<<<<<<< HEAD
 	/*
+=======
+	/**
+>>>>>>> vision finale
 	 * Thread utilisé pour recevoir le message.
 	 */
 
@@ -121,13 +125,23 @@ public class client {
 		public void run() {
 			while (true) {
 				try {
+<<<<<<< HEAD
 					if (quitter == true) { // ferme le flux de données entrant si l'utilisateur se déconnecte
 						ins.close();
 						break;
 					}
 					System.out.println(ins.readUTF()); // sinon affiche chaque message reçu
+=======
+					if (quitter == true) {// ferme le flux de données entrant si l'utilisateur se déconnecte
+						ins.close();
+						break;
+					}
+					System.out.println(ins.readUTF());// sinon affiche chaque message reçu
+>>>>>>> vision finale
 				} catch (IOException e) {
 					e.printStackTrace();
+					System.out.println("Serveur déconnecte avec une erreur ! !");
+					quitter = true;
 				}
 			}
 		}

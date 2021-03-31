@@ -142,6 +142,8 @@ public class serveur {
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
+				System.out.println(this.nom+" déconnecte avec une erreur ! !");
+				clientTable.remove(client);
 			}
 
 		}
